@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DougPI '24</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- <script src="https://momentjs.com/downloads/moment-with-locales.min.js"></script> -->
+    <!-- <script src="https://twilight.cogency.co.za/functions.js?ver=1"></script> -->
+    <style>
+        body,html {
+        margin:0;
+        padding:0;
+        }        
+
+        /*   PWA bits styling*/
+        .ad2hs-prompt {
+            background-color: black;
+            border: none;
+            display: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            position: absolute;
+            margin: auto;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            /* width: calc(100% - 32px); */
+            width: 100vw;
+            height: 70px;
+            border-radius: 5px;
+            box-shadow: 0 0 12px 0 rgb(0 0 0 / 50%);
+            letter-spacing: 1.2px;
+            font-weight: 300;
+            text-transform: uppercase;
+        }
+
+        .ios-prompt {
+            background-color: #ffffff;
+            display: none;
+            position: fixed;
+            top: 0;
+            padding-top: 50px;
+            z-index: 99999;
+            width: 100%;
+            height:100%;
+            background-color:rgba(0,0,0,0.5)
+        }
+
+        .ios-prompt-instructions{
+            background-color: #ffffff;
+            padding: 1rem 1rem 1rem 0.5rem;
+            text-decoration: none;
+            font-size: 15px;
+            border-radius: 15px;
+            box-shadow: rgba(0,0,0,0.2) 0px 20px 20px 5px;
+            width: 80%;
+            margin: auto
+        }
+        .prompt-close{
+            color: rgb(187, 187, 187); 
+            float: right; 
+            margin-top: -16px; 
+            margin-right: -8px;
+            font-size:28px
+        }
+        .prompt-share{
+            display: inline-block; 
+            margin-top: 4px; 
+            margin-bottom: -8px; 
+            height: 32px; 
+            width: auto
+        }
+        .prompt-add {
+            display: inline-block; 
+            padding-left:4px;
+            margin-top: 4px; 
+            margin-bottom: -8px; 
+            height: 32px; 
+            width: auto
+        }
+        .prompt-icon{
+            display: inline-block; 
+            margin-top: -8px; 
+            margin-bottom: -24px
+        }
+    </style>
+
+    <link rel="stylesheet" href="ext/fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="ext/fontawesome/css/solid.min.css">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- ios -->
+    <link rel="apple-touch-icon" href="/pwa-assets/launchericon-96-96.png">
+    <!-- <meta name="apple-mobile-web-app-status-bar" content="#888"> -->
+</head>
+
+
+<body>
+    <div class="container">
+        <h1>DougPI '24</h1>
+        <div class="logo-container">
+            <img src="/pwa-assets/android-launchericon-512-512.png" alt="Logo" class="logo">
+            <div class="countdown" id="countdown"></div>
+            <div class="button-bar">
+                <button class="control-button" id="start-btn" onclick="startPlayback()">START</button>
+                <button class="control-button" id="reset-btn" onclick="resetPlayback()">Reset</button>
+                <button class="control-button" id="recall-btn" onclick="recallPlayback()">Recall</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js" type="application/javascript"></script>
+
+    <!--    Add button to trigger install event-->
+    <button type="button" class="ad2hs-prompt">Install Web App</button>
+    
+    <!--    Instructions for iOS because there is no nice install event-->
+    <div class="ios-prompt">
+        <div class="ios-prompt-instructions">
+            <span class="prompt-close" style="">&times;</span>
+            <strong>Install the Web App in your iPhone/iPad:</strong>
+            <ol type="1">
+                <li>Click on <img class="prompt-share" src="/pwa-assets/share.svg" style=""> in the tab bar</li>
+                <li>Scroll and select Add to Home Screen<img class="prompt-add" src="/pwa-assets/add2home.svg" ></li>
+                <li>Look for DougPI <img class= "prompt-icon" src="/pwa-assets/android-launchericon-72-72.png" > on your homescreen</li>
+            </ol>
+        </div>
+    </div>
+
+    <!--  Load the Service Worker and conditionally show install prompt / instructions based on user agent  -->
+    <script type="text/javascript">
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/service-worker.js', {scope: '/'})
+                  .then(() => console.log('service worker installed'))
+              .catch(err => console.error('Error', err));
+          });
+
+        }
+
+        function addToHomeScreen() {
+          let a2hsBtn = document.querySelector(".ad2hs-prompt");
+          a2hsBtn.style.display = 'none';
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice
+          .then(function(choiceResult){
+              if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the A2HS prompt');
+              } else {
+                console.log('User dismissed the A2HS prompt');
+              }
+              deferredPrompt = null;
+          });
+        }
+
+        const isAndroid = () => {
+          const userAgent = window.navigator.userAgent.toLowerCase();
+          return /android/.test( userAgent );
+        }
+
+        const isIos = () => {
+          const userAgent = window.navigator.userAgent.toLowerCase();
+          return /iphone|ipad|ipod/.test( userAgent );
+        }
+
+        function showAddToHomeScreen() {
+          let a2hsBtn = document.querySelector(".ad2hs-prompt");
+          a2hsBtn.style.display = "block";
+
+          if (isAndroid() && !isInStandaloneMode()){
+              a2hsBtn.addEventListener("click", addToHomeScreen);
+          }else if (isIos() && !isInStandaloneMode()){
+            a2hsBtn.addEventListener("click", showIosInstall);
+          }
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', function (e) {
+          // Prevent Chrome 67 and earlier from automatically showing the prompt
+          e.preventDefault();
+          // Stash the event so it can be triggered later.
+          deferredPrompt = e;
+          showAddToHomeScreen();
+        });
+
+        function showIosInstall() {
+          let iosPrompt = document.querySelector(".ios-prompt");
+          iosPrompt.style.display = "block";
+          iosPrompt.addEventListener("click", () => {
+          iosPrompt.style.display = "none";
+          });
+        }
+
+        // Detects if device is in standalone mode
+        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+  </script>
+</body>
+
+
+</html>
